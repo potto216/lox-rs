@@ -103,7 +103,7 @@ fn test_number_literal_with_next() {
 
 #[test]
 fn test_number_literal_with_collect() {
-    let sample = " = 5 35.3 0.32.33 -4 = ";
+    let sample = " = 5 35.3 0.32.33 -4 =0.0 .123 123. 0. =";
     let scanner = Scanner::new(sample);
     let x = scanner.collect::<Vec<_>>();
     use TokenType::*;
@@ -154,7 +154,51 @@ fn test_number_literal_with_collect() {
                 token: EQUAL,
                 lexeme: "=",
                 line: 0
-            }
+            },
+            // The numbers 0.0 is supported so should show up as a number
+            Token {
+                token: NUMBER(0.0),
+                lexeme: "0.0",
+                line: 0
+            },
+            // The numbers .123 is supported so should show up as a dot and a number
+            Token {
+                token: DOT,
+                lexeme: ".",
+                line: 0
+            },
+            Token {
+                token: NUMBER(123.0),
+                lexeme: "123",
+                line: 0
+            },
+            // The numbers 123. is not supported so should show up as a number and a dot
+            Token {
+                token: NUMBER(123.0),
+                lexeme: "123",
+                line: 0
+            },
+            Token {
+                token: DOT,
+                lexeme: ".",
+                line: 0
+            },
+            // The numbers 0. is not supported so should show up as a number and a dot
+            Token {
+                token: NUMBER(0.0),
+                lexeme: "0",
+                line: 0
+            },
+            Token {
+                token: DOT,
+                lexeme: ".",
+                line: 0
+            },
+            Token {
+                token: EQUAL,
+                lexeme: "=",
+                line: 0
+            },
         ]
     );
 }
