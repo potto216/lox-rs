@@ -12,3 +12,4 @@
 **/*.rs.bk
 
 */flamegraph.svg
+.vscode

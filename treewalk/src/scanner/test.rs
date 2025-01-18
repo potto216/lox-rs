@@ -48,8 +48,18 @@ fn test_simple_lexer() {
     );
 }
 
+
 #[test]
-fn test_string_literal() {
+fn test_string_literal_with_next() {
+    let source = "\"hello world\"";
+    let mut scanner = Scanner::new(source);
+    let token = scanner.next().unwrap();
+    assert_eq!(token.token, TokenType::STRING("hello world"));
+    assert!(scanner.next().is_none());
+}
+
+#[test]
+fn test_string_literal_with_collect() {
     let sample = " > \"multiline\nstring\nliteral\" > ";
     let scanner = Scanner::new(sample);
     let x = scanner.collect::<Vec<_>>();
@@ -77,7 +87,22 @@ fn test_string_literal() {
 }
 
 #[test]
-fn test_number_literal() {
+fn test_number_literal_with_next() {
+    let source = "123 45.67";
+    let mut scanner = Scanner::new(source);
+    let expected_tokens = vec![
+        TokenType::NUMBER(123.0),
+        TokenType::NUMBER(45.67),
+    ];
+    for expected in expected_tokens {
+        let token = scanner.next().unwrap();
+        assert_eq!(token.token, expected);
+    }
+    assert!(scanner.next().is_none());
+}
+
+#[test]
+fn test_number_literal_with_collect() {
     let sample = " = 5 35.3 0.32.33 -4 = ";
     let scanner = Scanner::new(sample);
     let x = scanner.collect::<Vec<_>>();
@@ -200,4 +225,150 @@ fn test_keyword_ident() {
             }
         ]
     );
+}
+
+// Add after existing tests
+
+#[test]
+fn test_empty_input() {
+    let sample = "";
+    let scanner = Scanner::new(sample);
+    let tokens = scanner.collect::<Vec<_>>();
+    assert_eq!(tokens.len(), 0);
+}
+
+#[test]
+fn test_whitespace_combinations() {
+    let sample = "var\tx\r\ny\n\n=\t5";
+    let scanner = Scanner::new(sample);
+    let x = scanner.collect::<Vec<_>>();
+    use TokenType::*;
+    assert_eq!(
+        x,
+        vec![
+            Token {
+                token: VAR,
+                lexeme: "var",
+                line: 0
+            },
+            Token {
+                token: IDENTIFIER("x"),
+                lexeme: "x",
+                line: 0
+            },
+            Token {
+                token: IDENTIFIER("y"),
+                lexeme: "y",
+                line: 1
+            },
+            Token {
+                token: EQUAL,
+                lexeme: "=",
+                line: 3
+            },
+            Token {
+                token: NUMBER(5.0),
+                lexeme: "5",
+                line: 3
+            },
+        ]
+    );
+}
+
+
+
+#[test]
+#[should_panic(expected = "Unterminated string")]
+fn test_unterminated_string() {
+    let sample = "\"this string never ends";
+    let scanner = Scanner::new(sample);
+    let _tokens = scanner.collect::<Vec<_>>();
+}
+
+#[test]
+#[should_panic(expected = "Unexpected input")]
+fn test_invalid_character() {
+    let sample = "var x = @";
+    let scanner = Scanner::new(sample);
+    let _tokens = scanner.collect::<Vec<_>>();
+}
+
+#[test]
+fn test_two_character_tokens() {
+    let source = "!= == <= >= ! = < >";
+    let mut scanner = Scanner::new(source);
+    let expected_tokens = vec![
+        TokenType::BANG_EQUAL,
+        TokenType::EQUAL_EQUAL,
+        TokenType::LESS_EQUAL,
+        TokenType::GREATER_EQUAL,
+        TokenType::BANG,
+        TokenType::EQUAL,
+        TokenType::LESS,
+        TokenType::GREATER,
+    ];
+    for expected in expected_tokens {
+        let token = scanner.next().unwrap();
+        assert_eq!(token.token, expected);
+    }
+    assert!(scanner.next().is_none());
+}
+
+
+
+
+
+#[test]
+fn test_keywords() {
+    let source = "and class else false for fun if nil or print return super this true var while";
+    let mut scanner = Scanner::new(source);
+    let expected_tokens = vec![
+        TokenType::AND,
+        TokenType::CLASS,
+        TokenType::ELSE,
+        TokenType::FALSE,
+        TokenType::FOR,
+        TokenType::FUN,
+        TokenType::IF,
+        TokenType::NIL,
+        TokenType::OR,
+        TokenType::PRINT,
+        TokenType::RETURN,
+        TokenType::SUPER,
+        TokenType::THIS,
+        TokenType::TRUE,
+        TokenType::VAR,
+        TokenType::WHILE,
+    ];
+    for expected in expected_tokens {
+        let token = scanner.next().unwrap();
+        assert_eq!(token.token, expected);
+    }
+    assert!(scanner.next().is_none());
+}
+
+#[test]
+fn test_identifiers() {
+    let source = "foo bar _baz qux123";
+    let mut scanner = Scanner::new(source);
+    let expected_tokens = vec![
+        TokenType::IDENTIFIER("foo"),
+        TokenType::IDENTIFIER("bar"),
+        TokenType::IDENTIFIER("_baz"),
+        TokenType::IDENTIFIER("qux123"),
+    ];
+    for expected in expected_tokens {
+        let token = scanner.next().unwrap();
+        assert_eq!(token.token, expected);
+    }
+    assert!(scanner.next().is_none());
+}
+
+#[test]
+fn test_comments() {
+    let source = "// this is a comment\n123 // another comment";
+    let mut scanner = Scanner::new(source);
+    let token = scanner.next().unwrap();
+    assert_eq!(token.token, TokenType::NUMBER(123.0));
+    assert!(scanner.next().is_none());
 }
